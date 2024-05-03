@@ -1,0 +1,152 @@
+import React, { useState, useContext, useEffect } from 'react';
+import AuthContext from '../context/AuthContext';
+import { uploadDocumentToServer, getUserDocuments, deleteDocumentFromServer, downloadDocument } from '../services/DocumentServices';
+
+function DocumentsPage() {
+  const [selectedType, setSelectedType] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const { authTokens } = useContext(AuthContext);
+  const [userDocuments, setUserDocuments] = useState(null);
+
+  useEffect(() => {
+    const fetchUserDocuments = async () => {
+      if (authTokens) {
+        try {
+          const documents = await getUserDocuments(authTokens);
+          setUserDocuments(documents);
+        } catch (error) {
+          console.error('Ошибка при загрузке списка документов:', error);
+        }
+      }
+    };
+
+    fetchUserDocuments();
+  }, [authTokens]);
+
+  const handleFileChange = (event) => {
+    setSelectedFile(event.target.files[0]);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      console.error('No file selected for upload');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('type', selectedType);
+
+      const responseData = await uploadDocumentToServer(formData, authTokens);
+
+      console.log('File uploaded successfully:', responseData);
+
+      const updatedDocuments = await getUserDocuments(authTokens);
+      setUserDocuments(updatedDocuments);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+    }
+  };
+
+  const getConvertedType = (selectedType) => {
+    switch (selectedType) {
+      case 'Чеки':
+        return 'check';
+      case 'Сертификаты':
+        return 'certificate';
+      case 'Контракты':
+        return 'contract';
+      default:
+        return '';
+    }
+  };
+
+  const renderDocumentsList = () => {
+    if (!selectedType) {
+      return <p>Выберите тип документов из списка слева</p>;
+    }
+
+    // Получаем конвертированный тип для фильтрации
+    const convertedType = getConvertedType(selectedType);
+
+    // Фильтруем документы по конвертированному типу
+    const filteredDocuments = userDocuments.filter(document => document.classification === convertedType);
+
+    if (filteredDocuments.length === 0) {
+      return <p>Нет документов для отображения</p>;
+    }
+
+    return (
+      <ul className="list-group">
+        {filteredDocuments.map((document, index) => (
+          <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+            <span>{document.name}</span>
+            <div>
+              <button className="btn btn-primary mr-2" onClick={() => handleDownload(document)}>Скачать</button>
+              <button className="btn btn-danger" onClick={() => handleDelete(document)}>Удалить</button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  const handleDownload = async (document) => {
+    // Получаем id и имя файла из объекта документа
+
+    // Вызываем функцию загрузки документа с использованием axios
+    await downloadDocument(document.id, document.name, authTokens);
+  };
+
+  const handleDelete = async (document) => {
+    try {
+      await deleteDocumentFromServer(document.id, authTokens);
+      console.log('Документ успешно удален:', document);
+
+      // Обновляем список документов после удаления
+      const updatedDocuments = await getUserDocuments(authTokens);
+      setUserDocuments(updatedDocuments);
+    } catch (error) {
+      console.error('Ошибка при удалении документа:', error);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '100px' }}>
+      <div className="container mt-5">
+        <div className="row">
+          <div className="col-md-3">
+            <div className="card mb-4">
+              <div className="card-header">Загрузить файл</div>
+              <div className="card-body">
+                <input type="file" onChange={handleFileChange} />
+                <button className="btn btn-primary mt-2" onClick={handleUpload}>Загрузить</button>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-header">Типы документов</div>
+              <div className="card-body">
+                <div className="list-group">
+                  <a href="#" className={`list-group-item list-group-item-action ${selectedType === 'Чеки' ? 'active' : ''}`} onClick={() => setSelectedType('Чеки')}>Чеки</a>
+                  <a href="#" className={`list-group-item list-group-item-action ${selectedType === 'Сертификаты' ? 'active' : ''}`} onClick={() => setSelectedType('Сертификаты')}>Сертификаты</a>
+                  <a href="#" className={`list-group-item list-group-item-action ${selectedType === 'Контракты' ? 'active' : ''}`} onClick={() => setSelectedType('Контракты')}>Контракты</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-9">
+            <div className="card">
+              <div className="card-header">Документы</div>
+              <div className="card-body">
+                {renderDocumentsList()}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default DocumentsPage;
