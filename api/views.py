@@ -1,25 +1,79 @@
 import os
+import logging
 
 from rest_framework.exceptions import APIException
 from rest_framework.views import APIView
 
 from api.models import User, File
-from api.serializer import MyTokenObtainPairSerializer, RegisterSerializer, FileSerializer
+from api.serializer import (MyTokenObtainPairSerializer, RegisterSerializer, FileSerializer,
+                            UserSerializer, ProfileSerializer)
 
 from rest_framework.decorators import api_view
 from rest_framework import generics, status
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
+
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 
 from .services import DocumentUploadService, FilePreprocessingService, cloud_service
 
+logger = logging.getLogger(__name__)
+
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
+
+
+class UpdateUserAndProfileView(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            user = self.request.user
+
+            user_serializer = UserSerializer(user, data=request.data, partial=True)
+            if user_serializer.is_valid():
+                user_serializer.save()
+
+            profile_instance = user.profile
+            if profile_instance:
+                profile_serializer = ProfileSerializer(profile_instance, data=request.data, partial=True)
+            else:
+                profile_serializer = ProfileSerializer(data=request.data, partial=True)
+                if profile_serializer.is_valid():
+                    profile_serializer.save(user=user)
+
+            if profile_serializer.is_valid():
+                profile_serializer.save()
+
+                refresh = RefreshToken.for_user(user)
+
+                token_serializer = MyTokenObtainPairSerializer()
+
+                token = token_serializer.get_token(user)
+
+                return Response({
+                    'access': str(token),
+                    'refresh': str(refresh),
+                    'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'bio': user.profile.bio,
+                    'verified': user.profile.verified
+                }, status=status.HTTP_200_OK)
+
+            else:
+                logger.error(f"Profile serializer errors: {profile_serializer.errors}")
+                return Response(profile_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.exception("An error occurred while updating user and profile.")
+            return Response({"error": "An unexpected error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RegisterUserView(generics.CreateAPIView):
@@ -28,9 +82,44 @@ class RegisterUserView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
 
+class UpdateUserView(generics.UpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+
+class UpdateProfileView(generics.UpdateAPIView):
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def get_object(self):
+        return self.request.user.profile
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
+
+
 class DocumentUploadView(APIView):
     parser_classes = (MultiPartParser,)
-
 
     def post(self, request):
         user = request.user

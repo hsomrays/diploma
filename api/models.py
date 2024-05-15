@@ -15,13 +15,11 @@ class User(AbstractUser):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    full_name = models.CharField(max_length=300)
     bio = models.CharField(max_length=300)
-    image = models.ImageField(default='default.jpg', upload_to='profile_pics')
     verified = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.full_name
+        return f"{self.user.first_name} {self.user.last_name}"
 
 
 class File(models.Model):

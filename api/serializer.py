@@ -1,26 +1,31 @@
 from api.models import User, Profile, File
 
 from django.contrib.auth.password_validation import validate_password
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework import serializers
 
 
-# class UserSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = ['id', 'username', 'email']
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ['bio', 'verified']
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-
-        token['full_name'] = user.profile.full_name
         token['username'] = user.username
+        token['first_name'] = user.first_name
+        token['last_name'] = user.last_name
         token['email'] = user.email
         token['bio'] = user.profile.bio
-        token['image'] = str(user.profile.image)
         token['verified'] = user.profile.verified
 
         return token
@@ -63,9 +68,3 @@ class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = File
         fields = '__all__'
-
-
-# class ProfileSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Profile
-#         fields = ['full_name', 'bio', 'image', 'verified']

@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from django.conf import settings
 
 import nltk
 from django.conf import settings
@@ -119,10 +118,8 @@ class FileProcessingService:
         loaded_model = tf.keras.models.load_model('my_model.keras')
         sequences = tokenizer.texts_to_sequences([text])
         padded_sequences = pad_sequences(sequences, maxlen=1000)
-        # Предсказание класса
         prediction = loaded_model.predict(padded_sequences)
 
-        # Вывод результата
         predicted_class = np.argmax(prediction)
         if predicted_class == 0:
             return 'check'
@@ -136,22 +133,17 @@ class ComputerVisionService:
     @staticmethod
     def image_to_text(file_path):
         try:
-            # Загрузка изображения
             img = cv2.imread(file_path)
-            # Преобразование изображения в оттенки серого
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            # Применение пороговой фильтрации для улучшения контраста
             _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            # Поиск контуров на изображении
             contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            # Определение регионов с текстом и извлечение текста с помощью pytesseract
             extracted_text = ''
             for contour in contours:
                 x, y, w, h = cv2.boundingRect(contour)
                 cropped_img = gray[y:y + h, x:x + w]
                 text = pytesseract.image_to_string(cropped_img, lang='rus+eng', config='--psm 11')
                 extracted_text += text + ' '
-            return extracted_text.strip()  # Удаление лишних пробелов по краям
+            return extracted_text.strip()
         except Exception as e:
             print(f"Error extracting text from image: {e}")
             return None
@@ -163,7 +155,6 @@ class CloudService:
         self.secret_access_key = secret_access_key
         self.bucket_name = bucket_name
 
-        # Инициализация клиента Yandex Object Storage
         self.s3 = boto3.client(
             's3',
             endpoint_url='https://storage.yandexcloud.net',

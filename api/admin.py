@@ -8,7 +8,7 @@ class UserAdmin(admin.ModelAdmin):
 
 class ProfileAdmin(admin.ModelAdmin):
     list_editable = ['verified']
-    list_display = ['user', 'full_name', 'verified']
+    list_display = ['user', 'bio', 'verified']
 
 
 admin.site.register(User, UserAdmin)
