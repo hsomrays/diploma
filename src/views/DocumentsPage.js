@@ -5,6 +5,7 @@ import { uploadDocumentToServer, getUserDocuments, deleteDocumentFromServer, dow
 function DocumentsPage() {
   const [selectedType, setSelectedType] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const { authTokens } = useContext(AuthContext);
   const [userDocuments, setUserDocuments] = useState(null);
 
@@ -67,11 +68,15 @@ function DocumentsPage() {
       return <p>Выберите тип документов из списка слева</p>;
     }
 
-    // Получаем конвертированный тип для фильтрации
     const convertedType = getConvertedType(selectedType);
 
-    // Фильтруем документы по конвертированному типу
-    const filteredDocuments = userDocuments.filter(document => document.classification === convertedType);
+    let filteredDocuments = userDocuments.filter(document => document.classification === convertedType);
+
+    if (searchQuery) {
+      filteredDocuments = filteredDocuments.filter(document =>
+        document.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
 
     if (filteredDocuments.length === 0) {
       return <p>Нет документов для отображения</p>;
@@ -93,9 +98,6 @@ function DocumentsPage() {
   };
 
   const handleDownload = async (document) => {
-    // Получаем id и имя файла из объекта документа
-
-    // Вызываем функцию загрузки документа с использованием axios
     await downloadDocument(document.id, document.name, authTokens);
   };
 
@@ -104,12 +106,15 @@ function DocumentsPage() {
       await deleteDocumentFromServer(document.id, authTokens);
       console.log('Документ успешно удален:', document);
 
-      // Обновляем список документов после удаления
       const updatedDocuments = await getUserDocuments(authTokens);
       setUserDocuments(updatedDocuments);
     } catch (error) {
       console.error('Ошибка при удалении документа:', error);
     }
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
   };
 
   return (
@@ -139,6 +144,13 @@ function DocumentsPage() {
             <div className="card">
               <div className="card-header">Документы</div>
               <div className="card-body">
+                <input
+                  type="text"
+                  className="form-control mb-3"
+                  placeholder="Поиск документов..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                />
                 {renderDocumentsList()}
               </div>
             </div>

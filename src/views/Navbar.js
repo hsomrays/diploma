@@ -4,7 +4,7 @@ import AuthContext from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 
 function Navbar() {
-  const { user, logoutUser } = useContext(AuthContext);
+  const { logoutUser } = useContext(AuthContext);
   const token = localStorage.getItem('authTokens');
 
   if (token) {
@@ -16,10 +16,6 @@ function Navbar() {
 
   const toggleDropdown = () => {
     dropdownRef.current.classList.toggle('show');
-  };
-
-  const closeDropdown = () => {
-    dropdownRef.current.classList.remove('show');
   };
 
   return (
@@ -42,11 +38,6 @@ function Navbar() {
           </button>
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav">
-              <li className="nav-item">
-                <Link className="nav-link" to="/">
-                  Главная
-                </Link>
-              </li>
               {token === null && (
                 <>
                   <li className="nav-item">

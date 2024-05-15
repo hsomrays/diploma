@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
-import jwtDecode from "jwt-decode";
+import jwt_decode from "jwt-decode";
 import { useHistory } from "react-router-dom";
 import { loginUser as loginUserService, registerUser as registerUserService } from "../services/AuthServices";
 
@@ -19,13 +19,26 @@ export const AuthProvider = ({ children }) => {
 
   const history = useHistory();
 
+
+  useEffect(() => {
+    if (authTokens) {
+      try {
+        setUser(jwt_decode(authTokens.access));
+      } catch (error) {
+        console.error("Invalid token:", error);
+      }
+    }
+    setLoading(false);
+  }, [authTokens]);
+  
+  
   const loginUser = async (email, password) => {
     const { success, data, error } = await loginUserService(email, password);
     if (success && data) {
       setAuthTokens(data);
-      setUser(jwtDecode(data.access));
+      setUser(jwt_decode(data.access));
       localStorage.setItem("authTokens", JSON.stringify(data));
-      localStorage.setItem("token", data.access)
+      localStorage.setItem("token", data.access);
       history.push("/");
     } else {
       console.error("Login Error:", error);
@@ -43,24 +56,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
   const logoutUser = () => {
     setAuthTokens(null);
     setUser(null);
     localStorage.removeItem("authTokens");
-    localStorage.removeItem("token");
     history.push("/login");
   };
 
-  useEffect(() => {
-    if (authTokens) {
-      try {
-        setUser(jwtDecode(authTokens.access));
-      } catch (error) {
-        console.error("Invalid token:", error);
-      }
-    }
-    setLoading(false);
-  }, [authTokens]);
 
   const contextData = {
     user,
@@ -72,6 +75,7 @@ export const AuthProvider = ({ children }) => {
     logoutUser,
   };
 
+  
   return (
     <AuthContext.Provider value={contextData}>
       {!loading && children}

@@ -32,4 +32,24 @@ export const registerUser = async (email, username, password, password2) => {
   }
 };
 
+
+export const updateUserAndProfile = async (userData, authTokens) => {
+  try {
+    const response = await axiosInstance.post(
+      'update_user_profile/',
+      userData , 
+      {
+        headers: {
+          'Authorization': `Bearer ${authTokens?.access}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error updating user and profile:', error);
+    throw error;
+  }
+};
+
+
 export default axiosInstance;
