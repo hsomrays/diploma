@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 
 
+#Auth
 class User(AbstractUser):
     username = models.CharField(max_length=100, unique=True)
     email = models.EmailField(unique=True)
@@ -13,6 +14,7 @@ class User(AbstractUser):
         return self.username
 
 
+#Auth
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.CharField(max_length=300)
@@ -22,6 +24,7 @@ class Profile(models.Model):
         return f"{self.user.first_name} {self.user.last_name}"
 
 
+#DB
 class File(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)

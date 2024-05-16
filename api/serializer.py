@@ -5,18 +5,21 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Toke
 from rest_framework import serializers
 
 
+#Auth
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
 
 
+#Auth
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['bio', 'verified']
 
 
+#Auth
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
@@ -31,6 +34,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
 
+#Auth
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
@@ -64,6 +68,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+#DB
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = File

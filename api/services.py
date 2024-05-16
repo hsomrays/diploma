@@ -21,6 +21,7 @@ from api.models import User, File
 import boto3
 
 
+#DocUpload
 class DocumentUploadService:
     @staticmethod
     def save_uploaded_file(file_obj, directory):
@@ -36,6 +37,7 @@ class DocumentUploadService:
             raise APIException(f"Error uploading file: {str(e)}")
 
 
+#Preproccessing
 class FilePreprocessingService:
     @staticmethod
     def file_preprocessing(file_path, user: User):
@@ -101,6 +103,7 @@ class FilePreprocessingService:
             return None
 
 
+#Processing
 class FileProcessingService:
     @staticmethod
     def file_processing(file_path, extracted_text, user: User):
@@ -129,6 +132,7 @@ class FileProcessingService:
             return 'contract'
 
 
+#CompVision
 class ComputerVisionService:
     @staticmethod
     def image_to_text(file_path):
@@ -149,6 +153,7 @@ class ComputerVisionService:
             return None
 
 
+#Cloud
 class CloudService:
     def __init__(self, access_key_id, secret_access_key, bucket_name):
         self.access_key_id = access_key_id
@@ -223,6 +228,7 @@ class CloudService:
             return None
 
 
+#DB
 class FileService:
     @staticmethod
     def add_file(user, name, classification, extension, size, cloud_link):
